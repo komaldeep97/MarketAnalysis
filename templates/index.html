@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Stock Market Analysis</h1>
+    <form method="POST">
+        {% for i in range(5) %}
+        <input type="text" name="stock{{i+1}}" placeholder="Enter stock ticker">
+        {% endfor %}
+        <input type="submit" value="Generate Charts">
+    </form>
+    
+    {% if charts %}
+        {% for ticker, chart_data in charts.items() %}
+            <div class="chart-container">
+                <h2>{{ticker}}</h2>
+                <div id="chart_{{ticker}}">
+                    {{chart_data|safe}}
+                </div>
+                <button onclick="toggleMA('{{ticker}}', 20)">Toggle 20-day MA</button>
+                <button onclick="toggleMA('{{ticker}}', 50)">Toggle 50-day MA</button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <script>
+        function toggleMA(ticker, period) {
+            let showMA20 = $(`#chart_${ticker}`).data('ma20') || false;
+            let showMA50 = $(`#chart_${ticker}`).data('ma50') || false;
+            
+            if (period === 20) showMA20 = !showMA20;
+            if (period === 50) showMA50 = !showMA50;
+            
+            $.ajax({
+                url: '/update_chart',
+                method: 'POST',
+                data: {
+                    ticker: ticker,
+                    show_ma20: showMA20,
+                    show_ma50: showMA50
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $(`#chart_${ticker}`).html(response.chart);
+                        $(`#chart_${ticker}`).data('ma20', showMA20);
+                        $(`#chart_${ticker}`).data('ma50', showMA50);
+                    } else {
+                        alert('Error updating chart: ' + response.error);
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
